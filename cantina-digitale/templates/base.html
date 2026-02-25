@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Cantina Digitale{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --burgundy: #6B1A2A;
+    --burgundy-dark: #4A1020;
+    --burgundy-light: #8B2A3E;
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --cream: #F5EFE6;
+    --cream-dark: #EDE3D4;
+    --ink: #1C1008;
+    --ink-mid: #3D2B1A;
+    --muted: #8A7A6B;
+    --white: #FDFAF6;
+    --shadow: 0 4px 24px rgba(107,26,42,0.12);
+    --shadow-lg: 0 12px 48px rgba(107,26,42,0.18);
+  }
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--cream);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 0% 0%, rgba(107,26,42,0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 100% 100%, rgba(201,168,76,0.06) 0%, transparent 60%);
+  }
+  
+  /* NAV */
+  nav {
+    background: var(--burgundy-dark);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 2px solid var(--gold);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+  
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    padding: 1rem 0;
+  }
+  
+  .nav-brand .logo-icon {
+    font-size: 1.6rem;
+  }
+  
+  .nav-brand h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 0.08em;
+  }
+  
+  .nav-brand span {
+    color: var(--gold);
+    font-style: italic;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.2rem;
+    border-radius: 3px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-gold {
+    background: var(--gold);
+    color: var(--burgundy-dark);
+  }
+  .btn-gold:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,76,0.4); }
+  
+  .btn-outline {
+    background: transparent;
+    color: var(--cream);
+    border: 1px solid rgba(245,239,230,0.3);
+  }
+  .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+  
+  .btn-burgundy {
+    background: var(--burgundy);
+    color: var(--cream);
+  }
+  .btn-burgundy:hover { background: var(--burgundy-light); }
+  
+  .btn-danger {
+    background: transparent;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+    font-size: 0.7rem;
+  }
+  .btn-danger:hover { background: #c0392b; color: white; }
+  
+  .btn-lg {
+    padding: 0.8rem 2rem;
+    font-size: 0.8rem;
+  }
+  
+  /* FLASH */
+  .flash-messages { padding: 0 2rem; }
+  .flash {
+    padding: 0.8rem 1.2rem;
+    margin-top: 1rem;
+    border-radius: 3px;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    animation: slideIn 0.3s ease;
+  }
+  .flash.success { background: #d4edda; color: #155724; border-left: 3px solid #28a745; }
+  .flash.error { background: #f8d7da; color: #721c24; border-left: 3px solid #dc3545; }
+  
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  
+  /* CONTAINER */
+  .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+  .container-narrow { max-width: 900px; margin: 0 auto; padding: 2rem; }
+  
+  /* ORNAMENT */
+  .ornament {
+    text-align: center;
+    color: var(--gold);
+    font-size: 1.2rem;
+    letter-spacing: 0.5em;
+    margin: 1rem 0;
+  }
+  
+  /* SECTION CARD */
+  .section-card {
+    background: var(--white);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--cream-dark);
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  
+  .section-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--gold);
+    border-radius: 4px 0 0 4px;
+  }
+  
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--burgundy);
+    letter-spacing: 0.05em;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--cream-dark);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* FORM ELEMENTS */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  
+  .form-grid-2 { grid-template-columns: 1fr 1fr; }
+  .form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  
+  .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  
+  label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--cream-dark);
+    border-radius: 3px;
+    background: var(--cream);
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+  
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.15);
+    background: var(--white);
+  }
+  
+  textarea { resize: vertical; min-height: 80px; }
+  
+  /* SCORE DISPLAY */
+  .score-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--burgundy);
+    color: var(--gold);
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    float: right;
+    margin-top: -0.2rem;
+  }
+  
+  /* PUNTEGGIO BUTTONS */
+  .punteggio-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .punteggio-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .punteggio-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .punteggio-input input[type="number"] {
+    width: 70px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--burgundy);
+  }
+  .punteggio-range {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-style: italic;
+  }
+  
+  /* TOTAL SCORE */
+  .total-score-card {
+    background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy));
+    color: var(--cream);
+    border-radius: 4px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-lg);
+  }
+  .total-score-card .score-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 4rem;
+    font-weight: 300;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .total-score-card .score-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,239,230,0.6);
+    margin-top: 0.3rem;
+  }
+  .total-score-card .giudizio {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    color: var(--gold-light);
+    margin-top: 0.5rem;
+  }
+  
+  .score-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(245,239,230,0.2);
+  }
+  .score-item { text-align: center; }
+  .score-item .val { font-size: 1.2rem; font-weight: 600; color: var(--gold-light); }
+  .score-item .lbl { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(245,239,230,0.5); margin-top: 0.1rem; }
+  
+  /* PAGE HEADER */
+  .page-header {
+    padding: 2.5rem 0 1.5rem;
+    border-bottom: 1px solid var(--cream-dark);
+    margin-bottom: 2rem;
+  }
+  
+  .page-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    color: var(--burgundy-dark);
+    letter-spacing: 0.02em;
+  }
+  
+  .page-header p {
+    color: var(--muted);
+    font-size: 0.82rem;
+    margin-top: 0.3rem;
+    letter-spacing: 0.05em;
+  }
+  
+  /* DIVIDER */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--cream-dark);
+  }
+  .divider span {
+    color: var(--gold);
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+  }
+  
+  @media (max-width: 768px) {
+    .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+    .container, .container-narrow { padding: 1rem; }
+    nav { padding: 0 1rem; }
+  }
+</style>
+{% block extra_styles %}{% endblock %}
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-brand">
+    <span class="logo-icon">🍷</span>
+    <h1>Cantina <span>Digitale</span></h1>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="btn btn-outline">📋 Archivio</a>
+    <a href="/nuova" class="btn btn-gold">+ Degustazione</a>
+    <a href="/abbinamento" class="btn btn-outline" style="border-color:var(--gold);color:var(--gold);">🍽 Abbinamento</a>
+  </div>
+</nav>
+
+<div class="flash-messages">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

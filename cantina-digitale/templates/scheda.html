@@ -1,0 +1,709 @@
+{% extends "base.html" %}
+{% block title %}Nuova Degustazione - Cantina Digitale{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .scheda-header {
+    background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy));
+    padding: 2rem;
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .scheda-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; font-weight: 300; }
+  .ais-stamp { border: 2px solid var(--gold); padding: 0.5rem 1rem; border-radius: 3px; text-align: center; }
+  .ais-stamp .t { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+  .ais-stamp .l { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; color: var(--cream); font-style: italic; }
+
+  /* Live score bar */
+  #live-bar {
+    background: var(--white);
+    border-bottom: 1px solid var(--cream-dark);
+    padding: 0.7rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    position: sticky;
+    top: 58px;
+    z-index: 90;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    flex-wrap: wrap;
+  }
+  .lb-total .n { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: var(--burgundy); line-height:1; }
+  .lb-total .l { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .lb-item { text-align: center; }
+  .lb-item .v { font-weight: 700; font-size: 1.1rem; color: var(--burgundy); }
+  .lb-item .l { font-size: 0.58rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .lb-giudizio { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-style: italic; color: var(--gold); min-width: 110px; }
+  .lb-bar { flex:1; max-width:180px; height:5px; background:var(--cream-dark); border-radius:3px; overflow:hidden; }
+  .lb-bar-fill { height:100%; background: linear-gradient(90deg, var(--gold), var(--burgundy-light)); border-radius:3px; transition: width 0.3s ease; }
+
+  /* Section header colors matching original */
+  .sec-colore .section-title { color: #C97A2A; }
+  .sec-colore::before { background: #C97A2A; }
+  .sec-olfatto .section-title { color: #5A8A3A; }
+  .sec-olfatto::before { background: #5A8A3A; }
+  .sec-gusto .section-title { color: #2A6A9A; }
+  .sec-gusto::before { background: #2A6A9A; }
+
+  /* Radio pill buttons */
+  .pill-group { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.3rem; }
+  .pill-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--cream-dark);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink-mid);
+    transition: all 0.15s;
+    background: var(--cream);
+  }
+  .pill-group input[type=radio], .pill-group input[type=checkbox] { display: none; }
+  .pill-group input:checked + span,
+  .pill-group label:has(input:checked) {
+    background: var(--burgundy);
+    color: var(--cream);
+    border-color: var(--burgundy);
+  }
+  /* fallback for browsers without :has */
+  .pill-group label.selected {
+    background: var(--burgundy);
+    color: var(--cream);
+    border-color: var(--burgundy);
+  }
+
+  /* Score scale buttons */
+  .scale-group { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.5rem; }
+  .scale-group .scale-label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 0.3rem; min-width: 80px; }
+  .scale-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 32px;
+    border: 1px solid var(--cream-dark);
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--cream);
+    color: var(--ink-mid);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .scale-btn:hover { border-color: var(--gold); color: var(--burgundy); }
+  .scale-btn.active { background: var(--burgundy); color: var(--cream); border-color: var(--burgundy); }
+  .scale-pts { font-size: 0.72rem; color: var(--muted); margin-left: 0.5rem; font-style: italic; }
+
+  /* Descrittori olfatto as checkboxes */
+  .check-group { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+  .check-group label {
+    padding: 0.3rem 0.8rem;
+    border: 1px solid var(--cream-dark);
+    border-radius: 3px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    background: var(--cream);
+    color: var(--ink-mid);
+    transition: all 0.15s;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .check-group input[type=checkbox] { display: none; }
+  .check-group label:has(input:checked) {
+    background: #5A8A3A;
+    color: white;
+    border-color: #5A8A3A;
+  }
+  .check-group label.selected {
+    background: #5A8A3A;
+    color: white;
+    border-color: #5A8A3A;
+  }
+
+  .subsec-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #2A6A9A;
+    margin-top: 1rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .gusto-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .form-actions {
+    display: flex; gap: 1rem; justify-content: flex-end;
+    margin-top: 2rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--cream-dark); flex-wrap: wrap;
+  }
+
+  .conclusioni-bar {
+    display: flex; gap: 0; margin-top: 0.5rem; border-radius: 4px; overflow: hidden;
+  }
+  .conclusioni-bar .cb {
+    flex: 1; text-align: center; padding: 0.5rem 0.3rem; font-size: 0.7rem; font-weight: 600; line-height: 1.3;
+  }
+  .cb-acc { background: #e2e3e5; color: #383d41; }
+  .cb-buo { background: #fff3cd; color: #856404; }
+  .cb-ott { background: #cce5ff; color: #004085; }
+  .cb-ecc { background: #d4edda; color: #155724; }
+  .cb-mem { background: var(--burgundy); color: var(--gold); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scheda-header">
+  <div>
+    <h2>🍷 Scheda di Degustazione</h2>
+    <p style="font-size:0.75rem; opacity:0.6; letter-spacing:0.12em; text-transform:uppercase; margin-top:0.3rem;">Standard Assosommelier</p>
+  </div>
+  <div class="ais-stamp">
+    <div class="t">Scheda</div>
+    <div class="l">Assosommelier</div>
+  </div>
+</div>
+
+<div id="live-bar">
+  <div class="lb-total"><div class="n" id="sc-tot">0</div><div class="l">Totale / 100</div></div>
+  <div class="lb-item"><div class="v" id="sc-ocp">0</div><div class="l">Compl. Olf.</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-oqp">0</div><div class="l">Qual. Olf.</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-gep">0</div><div class="l">Equilibrio</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-gpp">0</div><div class="l">Persistenza</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-gqp">0</div><div class="l">Qual. Gust.</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-dp">0</div><div class="l">Dimensione</div></div>
+  <div class="lb-bar"><div class="lb-bar-fill" id="sc-bar" style="width:0%"></div></div>
+  <div class="lb-giudizio" id="sc-giu">—</div>
+</div>
+
+<form method="post" action="/salva" class="container-narrow">
+
+  <!-- DATI GENERALI -->
+  <div class="section-card" style="margin-top:2rem;">
+    <div class="section-title">Dati Generali</div>
+    <div class="form-grid">
+      <div class="form-group" style="grid-column: span 2;">
+        <label>Luogo</label>
+        <input type="text" name="luogo" placeholder="Luogo di degustazione">
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" name="data" value="{{ today }}">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:0.8rem;">
+      <label>Vino *</label>
+      <input type="text" name="vino" required placeholder="Nome del vino">
+    </div>
+    <div class="form-group" style="margin-top:0.8rem; max-width:200px;">
+      <label>Alcol % vol</label>
+      <input type="number" name="alcol" step="0.5" min="0" max="25" placeholder="es. 12.5">
+    </div>
+  </div>
+
+  <!-- COLORE -->
+  <div class="section-card sec-colore">
+    <div class="section-title" style="color:#C97A2A;">● COLORE</div>
+    
+    <div class="form-group">
+      <label>Colore</label>
+      <div class="pill-group" id="colore-group">
+        {% for c in ['Paglierino','Dorato','Aranciato','Cerasuolo','Ramato','Porpora','Rubino','Granato'] %}
+        <label onclick="selectPill(this,'colore')">
+          <input type="radio" name="colore" value="{{ c }}"><span>{{ c }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:0.8rem;">
+      <label>Riflesso</label>
+      <div class="pill-group" id="riflesso-group">
+        {% for r in ['Non rilevato','Verdolino','Dorato','Aranciato','Porpora','Granato'] %}
+        <label onclick="selectPill(this,'riflesso')">
+          <input type="radio" name="riflesso" value="{{ r }}"><span>{{ r }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-grid" style="margin-top:0.8rem;">
+      <div class="form-group">
+        <label>Densità Cromatica <small style="font-style:italic;text-transform:none;">(nei rossi)</small></label>
+        <div class="pill-group">
+          {% for d in ['Trasparente','Compatto','Opaco'] %}
+          <label onclick="selectPill(this,'densita_cromatica')">
+            <input type="radio" name="densita_cromatica" value="{{ d }}"><span>{{ d }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Limpidezza</label>
+        <div class="pill-group">
+          {% for l in ['Limpido','Cupo'] %}
+          <label onclick="selectPill(this,'limpidezza')">
+            <input type="radio" name="limpidezza" value="{{ l }}"><span>{{ l }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Vivacità</label>
+        <div class="pill-group">
+          {% for v in ['Vivace','Luminoso'] %}
+          <label onclick="selectPill(this,'vivacita')">
+            <input type="radio" name="vivacita" value="{{ v }}"><span>{{ v }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Perlage Grana Bollicine</label>
+        <div class="pill-group">
+          {% for p in ['Grandi','Fini'] %}
+          <label onclick="selectPill(this,'perlage_grana')">
+            <input type="radio" name="perlage_grana" value="{{ p }}"><span>{{ p }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OLFATTO -->
+  <div class="section-card sec-olfatto">
+    <div class="section-title" style="color:#5A8A3A;">● OLFATTO</div>
+
+    <div class="form-group">
+      <label>Descrittori</label>
+      <div class="check-group" id="descrittori-group">
+        {% for desc in ['Fruttato','Floreale','Vegetale','Minerale','Erbe aromatiche','Speziato','Tostato','Balsamico','Etereo'] %}
+        <label onclick="toggleCheck(this)">
+          <input type="checkbox" name="olfatto_descrittori" value="{{ desc }}">{{ desc }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:0.8rem;">
+      <label>Note</label>
+      <textarea name="olfatto_note" placeholder="Descrizione aromatica libera..."></textarea>
+    </div>
+
+    <!-- Complessità con scala numerica -->
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#5A8A3A; margin-bottom:0.5rem;">Complessità</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Facile</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_complessita',12,'olfatto_complessita_punti')">12</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_complessita',13,'olfatto_complessita_punti')">13</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Complesso</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_complessita',14,'olfatto_complessita_punti')">14</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_complessita',15,'olfatto_complessita_punti')">15</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Più che complesso</div>
+          <div class="scale-group">
+            <!-- label for 14/15 in "più che complesso" range but that was Complesso, Ampio is 16 -->
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Ampio</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_complessita',16,'olfatto_complessita_punti')">16</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-ocp">—</strong> / 16</span>
+      </div>
+      <input type="hidden" name="olfatto_complessita" id="olfatto_complessita" value="">
+      <input type="hidden" name="olfatto_complessita_punti" id="olfatto_complessita_punti" value="0">
+    </div>
+
+    <!-- Qualità olfattiva -->
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#5A8A3A; margin-bottom:0.5rem;">Qualità</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Accettabile</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',14,'olfatto_qualita_punti')">14</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',15,'olfatto_qualita_punti')">15</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Fine</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',16,'olfatto_qualita_punti')">16</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',17,'olfatto_qualita_punti')">17</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Più che fine</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',18,'olfatto_qualita_punti')">18</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',19,'olfatto_qualita_punti')">19</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Eccellente</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'olfatto_qualita',20,'olfatto_qualita_punti')">20</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-oqp">—</strong> / 20</span>
+      </div>
+      <input type="hidden" name="olfatto_qualita" id="olfatto_qualita" value="">
+      <input type="hidden" name="olfatto_qualita_punti" id="olfatto_qualita_punti" value="0">
+    </div>
+  </div>
+
+  <!-- GUSTO -->
+  <div class="section-card sec-gusto">
+    <div class="section-title" style="color:#2A6A9A;">● GUSTO</div>
+
+    <div class="gusto-grid">
+      <!-- Zucchero -->
+      <div class="form-group">
+        <div class="subsec-title">Zucchero</div>
+        <div class="pill-group" style="flex-direction:column; align-items:flex-start;">
+          {% for z in ['Secco','Tendente al dolce','Dolce','Molto dolce'] %}
+          <label onclick="selectPill(this,'gusto_zucchero')"><input type="radio" name="gusto_zucchero" value="{{ z }}"><span>{{ z }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Alcol -->
+      <div class="form-group">
+        <div class="subsec-title">Alcol (percepito)</div>
+        <div class="pill-group" style="flex-direction:column; align-items:flex-start;">
+          {% for a in ['Contenuto','Caldo','Più che Caldo','Molto Caldo'] %}
+          <label onclick="selectPill(this,'gusto_alcol')"><input type="radio" name="gusto_alcol" value="{{ a }}"><span>{{ a }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Acidità -->
+      <div class="form-group">
+        <div class="subsec-title">Acidità (percepita)</div>
+        <div class="pill-group" style="flex-direction:column; align-items:flex-start;">
+          {% for a in ['Contenuto','Fresco','Più che Fresco','Molto Fresco'] %}
+          <label onclick="selectPill(this,'gusto_acidita')"><input type="radio" name="gusto_acidita" value="{{ a }}"><span>{{ a }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Tannino -->
+      <div class="form-group">
+        <div class="subsec-title">Tannino</div>
+        <div class="pill-group" style="flex-direction:column; align-items:flex-start;">
+          {% for t in ['Amaro','Vegetale','Maturo','Raffinato'] %}
+          <label onclick="selectPill(this,'gusto_tannino')"><input type="radio" name="gusto_tannino" value="{{ t }}"><span>{{ t }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Equilibrio con scala -->
+    <div style="margin-top:1.2rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#2A6A9A; margin-bottom:0.5rem;">Equilibrio</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Squilibrato</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_equilibrio',14,'gusto_equilibrio_punti')">14</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">In fase di equilibrio</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_equilibrio',15,'gusto_equilibrio_punti')">15</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Bilanciato</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_equilibrio',16,'gusto_equilibrio_punti')">16</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_equilibrio',17,'gusto_equilibrio_punti')">17</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Equilibrato</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_equilibrio',18,'gusto_equilibrio_punti')">18</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-gep">—</strong> / 18</span>
+      </div>
+      <input type="hidden" name="gusto_equilibrio" id="gusto_equilibrio" value="">
+      <input type="hidden" name="gusto_equilibrio_punti" id="gusto_equilibrio_punti" value="0">
+    </div>
+
+    <!-- Persistenza con scala -->
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#2A6A9A; margin-bottom:0.5rem;">Persistenza</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Accettabile</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_persistenza',12,'gusto_persistenza_punti')">12</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Persistente</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_persistenza',13,'gusto_persistenza_punti')">13</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Più che persistente</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_persistenza',14,'gusto_persistenza_punti')">14</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_persistenza',15,'gusto_persistenza_punti')">15</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Lungo</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_persistenza',16,'gusto_persistenza_punti')">16</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-gpp">—</strong> / 16</span>
+      </div>
+      <input type="hidden" name="gusto_persistenza" id="gusto_persistenza" value="">
+      <input type="hidden" name="gusto_persistenza_punti" id="gusto_persistenza_punti" value="0">
+    </div>
+
+    <!-- Sapidità e Chiusura di bocca -->
+    <div class="form-grid" style="margin-top:1rem;">
+      <div class="form-group">
+        <div class="subsec-title">Sapidità percepita</div>
+        <div class="pill-group">
+          {% for s in ['Non avvertibile','Contenuto','Sapido','Più che sapido'] %}
+          <label onclick="selectPill(this,'gusto_sapidita')"><input type="radio" name="gusto_sapidita" value="{{ s }}"><span>{{ s }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="subsec-title">Chiusura di bocca</div>
+        <div class="pill-group">
+          {% for c in ['Imprecisa','Buona','Precisa','Elegante'] %}
+          <label onclick="selectPill(this,'gusto_chiusura')"><input type="radio" name="gusto_chiusura" value="{{ c }}"><span>{{ c }}</span></label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Qualità Gustativa con scala -->
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#2A6A9A; margin-bottom:0.5rem;">Qualità Gustativa</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Accettabile</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_qualita',20,'gusto_qualita_punti')">20</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_qualita',21,'gusto_qualita_punti')">21</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Fine</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_qualita',22,'gusto_qualita_punti')">22</button>
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_qualita',23,'gusto_qualita_punti')">23</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Più che fine</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'gusto_qualita',24,'gusto_qualita_punti')">24</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Eccellente</div>
+          <div class="scale-group">
+            <!-- 24 is max per the form -->
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-gqp">—</strong> / 24</span>
+      </div>
+      <input type="hidden" name="gusto_qualita" id="gusto_qualita" value="">
+      <input type="hidden" name="gusto_qualita_punti" id="gusto_qualita_punti" value="0">
+    </div>
+
+    <!-- Dimensione con scala -->
+    <div style="margin-top:1rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#2A6A9A; margin-bottom:0.5rem;">Dimensione</div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Strutturato / Sottile</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'dimensione',5,'dimensione_punti')">5</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Distinto</div>
+          <div class="scale-group">
+            <!-- 5 covers Distinto per la scheda -->
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem;">Suggestivo</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setScale(this,'dimensione',6,'dimensione_punti')">6</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-dp">—</strong> / 6</span>
+      </div>
+      <input type="hidden" name="dimensione" id="dimensione" value="">
+      <input type="hidden" name="dimensione_punti" id="dimensione_punti" value="0">
+    </div>
+
+    <!-- Prospettive di consumo -->
+    <div style="margin-top:1rem;">
+      <div class="subsec-title">Prospettive di consumo</div>
+      <div class="pill-group">
+        {% for p in ['Da bere subito','Brevi prospettive','Medie prospettive','Lunghe prospettive'] %}
+        <label onclick="selectPill(this,'prospettive')"><input type="radio" name="prospettive" value="{{ p }}"><span>{{ p }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCLUSIONI -->
+  <div class="section-card">
+    <div class="section-title">Conclusioni</div>
+    <div class="conclusioni-bar">
+      <div class="cb cb-acc">Accettabile<br><small>70 / 77</small></div>
+      <div class="cb cb-buo">Buono<br><small>78 / 85</small></div>
+      <div class="cb cb-ott">Ottimo<br><small>86 / 90</small></div>
+      <div class="cb cb-ecc">Eccellente<br><small>91 / 96</small></div>
+      <div class="cb cb-mem">Memorabile<br><small>97 / 100</small></div>
+    </div>
+    <div style="text-align:right; margin-top:1rem; font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--burgundy);">
+      Totale: <strong id="conclusioni-tot">—</strong>
+      <span style="font-size:1rem; font-style:italic; color:var(--gold); margin-left:0.5rem;" id="conclusioni-giu"></span>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/" class="btn btn-outline" style="background:var(--muted);color:white;padding:0.8rem 1.5rem;">Annulla</a>
+    <button type="submit" class="btn btn-gold btn-lg">💾 Salva Degustazione</button>
+  </div>
+</form>
+
+<script>
+// Pill radio selection (CSS :has fallback)
+function selectPill(label, name) {
+  document.querySelectorAll(`[name="${name}"]`).forEach(inp => {
+    inp.closest('label').classList.remove('selected');
+  });
+  label.classList.add('selected');
+}
+
+// Checkbox toggle (CSS :has fallback)
+function toggleCheck(label) {
+  label.classList.toggle('selected');
+}
+
+// Scale button selection
+const scaleState = {};
+
+function setScale(btn, fieldName, value, ptsField) {
+  // deactivate siblings in same group
+  const group = btn.parentElement;
+  group.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+  
+  // Check if already active (toggle off)
+  if (scaleState[ptsField] === value) {
+    scaleState[ptsField] = 0;
+    document.getElementById(fieldName).value = '';
+    document.getElementById(ptsField).value = '0';
+    const lbl = document.getElementById('lbl-' + ptsField.replace('_punti','').replace('olfatto_','o').replace('gusto_','g').replace('complessita','cp').replace('qualita','qp').replace('equilibrio','ep').replace('persistenza','pp').replace('_qualita','qp').replace('dimensione','dp'));
+    updateLiveScore();
+    return;
+  }
+  
+  btn.classList.add('active');
+  scaleState[ptsField] = value;
+  document.getElementById(fieldName).value = value;
+  document.getElementById(ptsField).value = value;
+  updateLiveScore();
+  
+  // Update label
+  const lblMap = {
+    'olfatto_complessita_punti': 'lbl-ocp',
+    'olfatto_qualita_punti': 'lbl-oqp',
+    'gusto_equilibrio_punti': 'lbl-gep',
+    'gusto_persistenza_punti': 'lbl-gpp',
+    'gusto_qualita_punti': 'lbl-gqp',
+    'dimensione_punti': 'lbl-dp',
+  };
+  if (lblMap[ptsField]) document.getElementById(lblMap[ptsField]).textContent = value;
+}
+
+function calcGiudizio(n) {
+  if (n >= 97) return 'Memorabile';
+  if (n >= 91) return 'Eccellente';
+  if (n >= 86) return 'Ottimo';
+  if (n >= 78) return 'Buono';
+  if (n >= 70) return 'Accettabile';
+  return '—';
+}
+
+function updateLiveScore() {
+  const ocp = parseInt(document.getElementById('olfatto_complessita_punti').value) || 0;
+  const oqp = parseInt(document.getElementById('olfatto_qualita_punti').value) || 0;
+  const gep = parseInt(document.getElementById('gusto_equilibrio_punti').value) || 0;
+  const gpp = parseInt(document.getElementById('gusto_persistenza_punti').value) || 0;
+  const gqp = parseInt(document.getElementById('gusto_qualita_punti').value) || 0;
+  const dp  = parseInt(document.getElementById('dimensione_punti').value) || 0;
+  const tot = ocp + oqp + gep + gpp + gqp + dp;
+  
+  document.getElementById('sc-tot').textContent = tot || 0;
+  document.getElementById('sc-ocp').textContent = ocp;
+  document.getElementById('sc-oqp').textContent = oqp;
+  document.getElementById('sc-gep').textContent = gep;
+  document.getElementById('sc-gpp').textContent = gpp;
+  document.getElementById('sc-gqp').textContent = gqp;
+  document.getElementById('sc-dp').textContent = dp;
+  document.getElementById('sc-bar').style.width = tot + '%';
+  document.getElementById('sc-giu').textContent = tot > 0 ? calcGiudizio(tot) : '—';
+  document.getElementById('conclusioni-tot').textContent = tot || '—';
+  document.getElementById('conclusioni-giu').textContent = tot > 0 ? calcGiudizio(tot) : '';
+  
+  // Update labels
+  document.getElementById('lbl-ocp').textContent = ocp || '—';
+  document.getElementById('lbl-oqp').textContent = oqp || '—';
+  document.getElementById('lbl-gep').textContent = gep || '—';
+  document.getElementById('lbl-gpp').textContent = gpp || '—';
+  document.getElementById('lbl-gqp').textContent = gqp || '—';
+  document.getElementById('lbl-dp').textContent = dp || '—';
+}
+</script>
+{% endblock %}

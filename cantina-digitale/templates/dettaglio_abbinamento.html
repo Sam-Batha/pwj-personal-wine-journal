@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}{{ d.cibo }} + {{ d.vino }} - PWJ{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .detail-hero {
+    background: linear-gradient(135deg, #0F2A1A 0%, #1A3A2A 60%, #2D5A3D 100%);
+    padding: 3rem 2rem; color: var(--cream); position: relative; overflow: hidden;
+  }
+  .detail-hero::before { content:'🍽'; position:absolute; font-size:16rem; opacity:0.05; bottom:-3rem; right:-1rem; }
+  .detail-hero .title { font-family:'Cormorant Garamond',serif; font-size:2.4rem; font-weight:300; line-height:1.2; }
+  .detail-hero .sub { font-size:0.82rem; opacity:0.6; margin-top:0.4rem; letter-spacing:0.1em; }
+  .score-chip { display:inline-flex; align-items:center; gap:0.8rem; background:rgba(201,168,76,0.2); border:1px solid var(--gold); padding:0.8rem 1.5rem; border-radius:4px; margin-top:1.2rem; }
+  .score-big { font-family:'Cormorant Garamond',serif; font-size:3.5rem; font-weight:300; color:var(--gold); line-height:1; }
+  .score-info .giu { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-style:italic; color:var(--gold-light); }
+  .score-info .max { font-size:0.65rem; opacity:0.5; letter-spacing:0.15em; text-transform:uppercase; }
+
+  .mini-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:3px; margin-top:0.8rem; }
+  .mg-col { display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .mg-bar { width:28px; background:var(--cream-dark); border-radius:2px; position:relative; overflow:hidden; height:80px; }
+  .mg-fill-cibo { position:absolute; bottom:0; width:100%; background:rgba(201,120,42,0.7); border-radius:2px; }
+  .mg-fill-vino { position:absolute; bottom:0; width:100%; background:rgba(107,26,42,0.6); border-radius:2px; }
+  .mg-label { font-size:0.52rem; color:var(--muted); text-align:center; letter-spacing:0; text-transform:none; font-weight:400; line-height:1.2; margin-top:2px; }
+  .mg-val { font-size:0.65rem; font-weight:700; color:var(--ink-mid); }
+
+  .detail-row { display:flex; padding:0.55rem 0; border-bottom:1px solid var(--cream-dark); gap:1rem; }
+  .detail-row:last-child { border-bottom:none; }
+  .detail-row .k { font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); min-width:160px; flex-shrink:0; padding-top:0.1rem; }
+  .detail-row .v { font-size:0.88rem; color:var(--ink-mid); flex:1; }
+
+  .score-breakdown { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .sb-item { background:var(--white); border:1px solid var(--cream-dark); border-radius:4px; padding:1rem; text-align:center; box-shadow:var(--shadow); }
+  .sb-item .val { font-family:'Cormorant Garamond',serif; font-size:2.2rem; font-weight:300; color:#1A3A2A; line-height:1; }
+  .sb-item .max { font-size:0.62rem; color:var(--muted); }
+  .sb-item .lbl { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:0.3rem; }
+  .sb-item .bar { height:4px; background:var(--cream-dark); border-radius:2px; margin-top:0.5rem; overflow:hidden; }
+  .sb-item .bar-fill { height:100%; background:linear-gradient(90deg, var(--gold), #1A3A2A); border-radius:2px; }
+
+  .conclusioni-bar { display:flex; border-radius:4px; overflow:hidden; }
+  .cb { flex:1; text-align:center; padding:0.5rem 0.3rem; font-size:0.7rem; font-weight:600; line-height:1.3; }
+  .cb-sco { background:#f8d7da; color:#721c24; }
+  .cb-acc { background:#fff3cd; color:#856404; }
+  .cb-buo { background:#d4edda; color:#155724; }
+  .cb-app { background:#1A3A2A; color:var(--gold); }
+  .cb.active { outline:3px solid #0F2A1A; outline-offset:-3px; transform:scale(1.02); position:relative; z-index:1; }
+
+  .actions-bar { display:flex; gap:1rem; padding:1.5rem 0; justify-content:flex-end; border-top:1px solid var(--cream-dark); margin-top:1rem; flex-wrap:wrap; }
+  .legend { display:flex; gap:1rem; margin-bottom:0.5rem; }
+  .legend-item { display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; color:var(--muted); }
+  .legend-dot { width:12px; height:12px; border-radius:2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-hero">
+  <div class="title">{{ d.cibo }} <span style="opacity:0.5;font-size:1.5rem;">+</span> {{ d.vino }}</div>
+  <div class="sub">{% if d.anno %}{{ d.anno }}{% endif %}{% if d.alcol %} · {{ d.alcol }}% vol{% endif %}{% if d.data %} · {{ d.data }}{% endif %}</div>
+  {% if d.punteggio_totale %}
+  <div class="score-chip">
+    <div class="score-big">{{ d.punteggio_totale }}</div>
+    <div class="score-info">
+      <div class="giu">{{ d.giudizio_finale }}</div>
+      <div class="max">su 15 punti</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="container-narrow">
+
+  <!-- Dati generali -->
+  <div class="section-card" style="margin-top:2rem;">
+    <div class="section-title">Dati Generali</div>
+    <div class="detail-row"><span class="k">Luogo</span><span class="v">{{ d.luogo or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Data</span><span class="v">{{ d.data or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Cibo</span><span class="v"><strong>{{ d.cibo }}</strong></span></div>
+    <div class="detail-row"><span class="k">Vino</span><span class="v"><strong>{{ d.vino }}</strong>{% if d.anno %} · {{ d.anno }}{% endif %}</span></div>
+  </div>
+
+  <!-- Score breakdown -->
+  {% if d.punteggio_totale %}
+  <div class="score-breakdown">
+    <div class="sb-item">
+      <div class="val">{{ d.pulizia_punti }}</div><div class="max">/ 4</div>
+      <div class="lbl">Pulizia Cavo Orale</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.pulizia_punti or 0)/4*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.piacevolezza_punti }}</div><div class="max">/ 4</div>
+      <div class="lbl">Piacevolezza</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.piacevolezza_punti or 0)/4*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.sensazioni_punti }}</div><div class="max">/ 7</div>
+      <div class="lbl">Sensazioni Finali</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.sensazioni_punti or 0)/7*100)|int }}%"></div></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Cibo visual -->
+  <div class="section-card">
+    <div class="section-title" style="color:#C97A2A;">● CIBO — Parametri</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(201,120,42,0.7)"></div>Cibo</div>
+    </div>
+    <div class="mini-grid">
+      {% for col, label in [('cibo_dolce','Dolce'),('cibo_grassezza','Grassezza'),('cibo_tendenza_dolce','Tend. Dolce'),('cibo_untuosita','Untuosità'),('cibo_succulenza','Succulenza'),('cibo_sapidita','Sapidità'),('cibo_acidita','Acidità'),('cibo_amaro','Amaro')] %}
+      <div class="mg-col">
+        <div class="mg-val">{{ d[col] or 0 }}</div>
+        <div class="mg-bar"><div class="mg-fill-cibo" style="height:{{ ((d[col] or 0)/10*100)|int }}%"></div></div>
+        <div class="mg-label">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="detail-row"><span class="k">Aspetti Aromatici</span><span class="v">{{ d.cibo_aromatici or '—' }}</span></div>
+      <div class="detail-row"><span class="k">Sensazioni Metalliche</span><span class="v">{{ d.cibo_metalliche or '—' }}</span></div>
+      <div class="detail-row"><span class="k">Condimenti</span><span class="v">{{ d.cibo_condimenti or '—' }}</span></div>
+    </div>
+  </div>
+
+  <!-- Vino visual -->
+  <div class="section-card">
+    <div class="section-title" style="color:#6B1A2A;">● VINO — Parametri</div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(107,26,42,0.6)"></div>Vino</div>
+    </div>
+    <div class="mini-grid">
+      {% for col, label in [('vino_dolce','Dolce'),('vino_acidita','Acidità'),('vino_sapidita','Sapidità'),('vino_tannino','Tannino'),('vino_effervescenza','Efferv.'),('vino_alcol','Alcol'),('vino_glicerina','Glicerina'),('vino_tendenza_dolce','Tend. Dolce')] %}
+      <div class="mg-col">
+        <div class="mg-val">{{ d[col] or 0 }}</div>
+        <div class="mg-bar"><div class="mg-fill-vino" style="height:{{ ((d[col] or 0)/10*100)|int }}%"></div></div>
+        <div class="mg-label">{{ label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:1rem;">
+      <div class="detail-row"><span class="k">Aspetti Aromatici/Fumé</span><span class="v">{{ d.vino_aromatici or '—' }}</span></div>
+      <div class="detail-row"><span class="k">Finale Ammandorlato</span><span class="v">{{ d.vino_finale_amm or '—' }}</span></div>
+      <div class="detail-row"><span class="k">Tattilità</span><span class="v">{{ d.vino_tattilita or '—' }}</span></div>
+    </div>
+  </div>
+
+  <!-- Conclusioni -->
+  <div class="section-card">
+    <div class="section-title" style="color:#1A3A2A;">● Conclusioni</div>
+    <div class="conclusioni-bar">
+      <div class="cb cb-sco {% if d.punteggio_totale and d.punteggio_totale >= 3 and d.punteggio_totale <= 5 %}active{% endif %}">Sconsigliato<br><small>3 – 5</small></div>
+      <div class="cb cb-acc {% if d.punteggio_totale and d.punteggio_totale >= 6 and d.punteggio_totale <= 8 %}active{% endif %}">Accettabile<br><small>6 – 8</small></div>
+      <div class="cb cb-buo {% if d.punteggio_totale and d.punteggio_totale >= 9 and d.punteggio_totale <= 12 %}active{% endif %}">Buono<br><small>9 – 12</small></div>
+      <div class="cb cb-app {% if d.punteggio_totale and d.punteggio_totale >= 13 %}active{% endif %}">Appagante<br><small>13 – 15</small></div>
+    </div>
+    <div style="text-align:right; margin-top:1rem; font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:#1A3A2A;">
+      Totale: <strong>{{ d.punteggio_totale or '—' }}</strong>
+      <span style="font-size:1rem; font-style:italic; color:var(--gold); margin-left:0.5rem;">{{ d.giudizio_finale or '' }}</span>
+    </div>
+    {% if d.note %}
+    <div style="margin-top:1rem; background:var(--cream); border-left:3px solid var(--gold); padding:0.8rem 1rem; font-style:italic; font-size:0.85rem; color:var(--ink-mid);">{{ d.note }}</div>
+    {% endif %}
+  </div>
+
+  <div class="actions-bar">
+    <a href="/" class="btn btn-outline" style="background:var(--muted);color:white;padding:0.7rem 1.5rem;">← Archivio</a>
+    <a href="/abbinamento" class="btn btn-lg" style="background:#1A3A2A;color:var(--cream);padding:0.7rem 1.5rem;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:3px;text-decoration:none;">+ Nuovo Abbinamento</a>
+    <form method="post" action="/elimina_abbinamento/{{ d.id }}" onsubmit="return confirm('Eliminare questo abbinamento?');">
+      <button type="submit" class="btn btn-danger" style="padding:0.7rem 1rem;">🗑 Elimina</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

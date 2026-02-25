@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+{% block title %}Scheda Abbinamento Cibo/Vino - PWJ{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .abb-header {
+    background: linear-gradient(135deg, #1A3A2A, #2D5A3D);
+    padding: 2rem;
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 2px solid var(--gold);
+  }
+  .abb-header h2 { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:300; }
+  .ais-stamp { border:2px solid var(--gold); padding:0.5rem 1rem; border-radius:3px; text-align:center; }
+  .ais-stamp .t { font-size:0.6rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); }
+  .ais-stamp .l { font-family:'Cormorant Garamond',serif; font-size:1.2rem; color:var(--cream); font-style:italic; }
+
+  /* Score bar */
+  #live-bar {
+    background:var(--white); border-bottom:1px solid var(--cream-dark);
+    padding:0.7rem 2rem; display:flex; align-items:center; justify-content:center;
+    gap:1.5rem; position:sticky; top:58px; z-index:90;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06); flex-wrap:wrap;
+  }
+  .lb-total .n { font-family:'Cormorant Garamond',serif; font-size:2.2rem; color:#1A3A2A; line-height:1; }
+  .lb-total .l { font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
+  .lb-item { text-align:center; }
+  .lb-item .v { font-weight:700; font-size:1.1rem; color:#1A3A2A; }
+  .lb-item .l { font-size:0.58rem; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+  .lb-giudizio { font-family:'Cormorant Garamond',serif; font-size:1.1rem; font-style:italic; color:var(--gold); min-width:110px; }
+
+  /* Section colors */
+  .sec-cibo::before { background:#C97A2A !important; }
+  .sec-cibo .section-title { color:#C97A2A !important; }
+  .sec-vino::before { background:#6B1A2A !important; }
+  .sec-vino .section-title { color:#6B1A2A !important; }
+  .sec-finale::before { background:#1A3A2A !important; }
+  .sec-finale .section-title { color:#1A3A2A !important; }
+
+  /* Grid chart */
+  .chart-container {
+    overflow-x: auto;
+    margin-top: 1rem;
+  }
+
+  .chart-grid {
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--cream-dark);
+    border-radius: 4px;
+    overflow: hidden;
+    min-width: 600px;
+  }
+
+  /* Header row */
+  .chart-header {
+    display: flex;
+    background: #f8f4ee;
+    border-bottom: 2px solid var(--cream-dark);
+  }
+  .chart-header .ch-struttura {
+    display: flex;
+    border-right: 2px solid var(--cream-dark);
+    flex: 0 0 auto;
+  }
+  .chart-header .ch-persistenza {
+    display: flex;
+    flex: 0 0 auto;
+  }
+  .ch-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.4rem 0.3rem;
+    text-align: center;
+    width: 72px;
+    border-right: 1px solid var(--cream-dark);
+  }
+  .ch-label:last-child { border-right: none; }
+
+  /* Sub-headers for struttura/persistenza ranges */
+  .chart-subheader {
+    display: flex;
+    background: #f0ebe3;
+    border-bottom: 1px solid var(--cream-dark);
+    font-size: 0.55rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .csh-group {
+    display: flex;
+    border-right: 2px solid var(--cream-dark);
+  }
+  .csh-group:last-child { border-right: none; }
+  .csh-item {
+    width: 72px;
+    padding: 0.25rem 0.3rem;
+    text-align: center;
+    border-right: 1px solid var(--cream-dark);
+    font-style: italic;
+  }
+  .csh-item:last-child { border-right: none; }
+
+  /* Data rows (numbers 10 down to 1) */
+  .chart-rows {
+    display: flex;
+    flex-direction: column;
+  }
+  .chart-row {
+    display: flex;
+    border-bottom: 1px solid var(--cream-dark);
+    position: relative;
+  }
+  .chart-row:last-child { border-bottom: none; }
+  .chart-row .row-num {
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    color: var(--muted);
+    font-weight: 600;
+    background: #f8f4ee;
+    border-right: 1px solid var(--cream-dark);
+    flex-shrink: 0;
+  }
+
+  /* Each cell in the grid */
+  .chart-cell {
+    width: 72px;
+    height: 28px;
+    border-right: 1px solid var(--cream-dark);
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .chart-cell:last-child { border-right: none; }
+  .chart-cell:hover { background: rgba(201,168,76,0.15); }
+  .chart-cell.filled-cibo { background: rgba(201,120,42,0.25); }
+  .chart-cell.filled-vino { background: rgba(107,26,42,0.2); }
+  .chart-cell.selected-cibo { background: rgba(201,120,42,0.7); }
+  .chart-cell.selected-vino { background: rgba(107,26,42,0.6); }
+  .chart-cell.selected-cibo::after {
+    content: '×';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    color: #8A4010;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .chart-cell.selected-vino::after {
+    content: '×';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    color: var(--burgundy-dark);
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  /* Divider between struttura and persistenza columns */
+  .col-divider {
+    width: 2px;
+    background: var(--cream-dark);
+    flex-shrink: 0;
+  }
+
+  /* Footer labels row */
+  .chart-footer {
+    display: flex;
+    border-top: 2px solid var(--cream-dark);
+    background: #f8f4ee;
+  }
+  .cf-spacer { width: 24px; border-right: 1px solid var(--cream-dark); flex-shrink:0; }
+  .cf-label {
+    width: 72px;
+    padding: 0.4rem 0.2rem;
+    text-align: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--ink-mid);
+    border-right: 1px solid var(--cream-dark);
+    flex-shrink: 0;
+  }
+  .cf-label:last-child { border-right: none; }
+
+  /* Scale buttons for finale */
+  .scale-group { display:flex; flex-wrap:wrap; gap:0.3rem; align-items:center; margin-top:0.5rem; }
+  .scale-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:38px; height:32px; border:1px solid var(--cream-dark); border-radius:3px;
+    font-size:0.8rem; font-weight:600; cursor:pointer; background:var(--cream);
+    color:var(--ink-mid); transition:all 0.15s; user-select:none;
+  }
+  .scale-btn:hover { border-color:var(--gold); color:#1A3A2A; }
+  .scale-btn.active { background:#1A3A2A; color:var(--cream); border-color:#1A3A2A; }
+  .scale-pts { font-size:0.72rem; color:var(--muted); margin-left:0.5rem; font-style:italic; }
+
+  .pill-group { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.3rem; }
+  .pill-group label {
+    display:flex; align-items:center; gap:0.3rem;
+    padding:0.3rem 0.7rem; border:1px solid var(--cream-dark); border-radius:20px;
+    font-size:0.78rem; cursor:pointer; font-weight:400; text-transform:none;
+    letter-spacing:0; color:var(--ink-mid); transition:all 0.15s; background:var(--cream);
+  }
+  .pill-group input[type=radio] { display:none; }
+  .pill-group label.selected { background:#1A3A2A; color:var(--cream); border-color:#1A3A2A; }
+
+  .conclusioni-bar { display:flex; border-radius:4px; overflow:hidden; margin-top:0.5rem; }
+  .cb { flex:1; text-align:center; padding:0.5rem 0.3rem; font-size:0.7rem; font-weight:600; line-height:1.3; }
+  .cb-sco { background:#f8d7da; color:#721c24; }
+  .cb-acc { background:#fff3cd; color:#856404; }
+  .cb-buo { background:#d4edda; color:#155724; }
+  .cb-app { background:#1A3A2A; color:var(--gold); }
+
+  .form-actions { display:flex; gap:1rem; justify-content:flex-end; margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--cream-dark); flex-wrap:wrap; }
+
+  .chart-legend { display:flex; gap:1.5rem; margin-top:0.5rem; flex-wrap:wrap; }
+  .legend-item { display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; color:var(--muted); }
+  .legend-dot { width:14px; height:14px; border-radius:2px; }
+  .legend-cibo { background:rgba(201,120,42,0.7); }
+  .legend-vino { background:rgba(107,26,42,0.6); }
+
+  .grid-note { font-size:0.72rem; color:var(--muted); font-style:italic; margin-top:0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="abb-header">
+  <div>
+    <h2>🍽 Scheda di Abbinamento Cibo/Vino</h2>
+    <p style="font-size:0.75rem; opacity:0.6; letter-spacing:0.12em; text-transform:uppercase; margin-top:0.3rem;">Standard Assosommelier</p>
+  </div>
+  <div class="ais-stamp">
+    <div class="t">Abbinamento</div>
+    <div class="l">Assosommelier</div>
+  </div>
+</div>
+
+<!-- Live score bar -->
+<div id="live-bar">
+  <div class="lb-total"><div class="n" id="sc-tot">0</div><div class="l">Totale / 15</div></div>
+  <div class="lb-item"><div class="v" id="sc-p1">0</div><div class="l">Pulizia</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-p2">0</div><div class="l">Piacevolezza</div></div>
+  <span style="color:var(--cream-dark)">+</span>
+  <div class="lb-item"><div class="v" id="sc-p3">0</div><div class="l">Sensazioni</div></div>
+  <div class="lb-giudizio" id="sc-giu">—</div>
+</div>
+
+<form method="post" action="/salva_abbinamento" class="container-narrow">
+
+  <!-- DATI GENERALI -->
+  <div class="section-card" style="margin-top:2rem;">
+    <div class="section-title">Dati Generali</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Luogo</label>
+        <input type="text" name="luogo" placeholder="Luogo di degustazione">
+      </div>
+      <div class="form-group">
+        <label>Data</label>
+        <input type="date" name="data" value="{{ today }}">
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:0.8rem;">
+      <div class="form-group" style="grid-column:span 2;">
+        <label>Cibo *</label>
+        <input type="text" name="cibo" required placeholder="Nome del cibo / piatto">
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:0.8rem;">
+      <div class="form-group" style="grid-column:span 2;">
+        <label>Vino *</label>
+        <input type="text" name="vino" required placeholder="Nome del vino">
+      </div>
+      <div class="form-group">
+        <label>Anno</label>
+        <input type="text" name="anno" placeholder="es. 2020">
+      </div>
+      <div class="form-group">
+        <label>Alcol % vol</label>
+        <input type="number" name="alcol" step="0.5" min="0" max="25" placeholder="es. 13.5">
+      </div>
+    </div>
+  </div>
+
+  <!-- CIBO -->
+  <div class="section-card sec-cibo">
+    <div class="section-title" style="color:#C97A2A;">● CIBO</div>
+    <p class="grid-note">Clicca sulla cella per indicare il valore (1-10) di ogni parametro del cibo.</p>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot legend-cibo"></div> Cibo</div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-grid" id="grid-cibo">
+        <!-- Subheader struttura -->
+        <div class="chart-subheader" style="padding-left:24px;">
+          <div class="csh-group">
+            <div class="csh-item">Esile</div>
+            <div class="csh-item">Strutturato</div>
+            <div class="csh-item">Più che strutt.</div>
+            <div class="csh-item">Imponente</div>
+          </div>
+          <div style="width:2px;background:var(--cream-dark);flex-shrink:0;"></div>
+          <div class="csh-group">
+            <div class="csh-item">Accettabile</div>
+            <div class="csh-item">Persistente</div>
+            <div class="csh-item">Più che pers.</div>
+            <div class="csh-item">Lungo</div>
+          </div>
+        </div>
+
+        <!-- Rows 10 to 1 -->
+        <div class="chart-rows" id="cibo-rows"></div>
+
+        <!-- Footer labels -->
+        <div class="chart-footer">
+          <div class="cf-spacer"></div>
+          <div class="cf-label">Dolce</div>
+          <div class="cf-label">Grassezza</div>
+          <div class="cf-label">Tendenza Dolce</div>
+          <div class="cf-label">Untuosità</div>
+          <div style="width:2px;background:var(--cream-dark);flex-shrink:0;"></div>
+          <div class="cf-label">Succulenza</div>
+          <div class="cf-label">Sapidità</div>
+          <div class="cf-label">Acidità</div>
+          <div class="cf-label">Amaro</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden inputs for cibo values -->
+    <div id="cibo-inputs"></div>
+
+    <div class="form-grid" style="margin-top:1rem;">
+      <div class="form-group">
+        <label>Aspetti Aromatici</label>
+        <input type="text" name="cibo_aromatici" placeholder="es. Speziato, vanigliato...">
+      </div>
+      <div class="form-group">
+        <label>Sensazioni Metalliche</label>
+        <input type="text" name="cibo_metalliche" placeholder="Presenti / Assenti">
+      </div>
+      <div class="form-group">
+        <label>Condimenti</label>
+        <input type="text" name="cibo_condimenti" placeholder="es. Olio EVO, sale...">
+      </div>
+    </div>
+  </div>
+
+  <!-- VINO -->
+  <div class="section-card sec-vino">
+    <div class="section-title" style="color:#6B1A2A;">● VINO</div>
+    <p class="grid-note">Clicca sulla cella per indicare il valore (1-10) di ogni parametro del vino.</p>
+
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot legend-vino"></div> Vino</div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-grid" id="grid-vino">
+        <div class="chart-subheader" style="padding-left:24px;">
+          <div class="csh-group">
+            <div class="csh-item">Esile</div>
+            <div class="csh-item">Strutturato</div>
+            <div class="csh-item">Più che strutt.</div>
+            <div class="csh-item">Imponente</div>
+          </div>
+          <div style="width:2px;background:var(--cream-dark);flex-shrink:0;"></div>
+          <div class="csh-group">
+            <div class="csh-item">Accettabile</div>
+            <div class="csh-item">Persistente</div>
+            <div class="csh-item">Più che pers.</div>
+            <div class="csh-item">Lungo</div>
+          </div>
+        </div>
+        <div class="chart-rows" id="vino-rows"></div>
+        <div class="chart-footer">
+          <div class="cf-spacer"></div>
+          <div class="cf-label">Dolce</div>
+          <div class="cf-label">Acidità</div>
+          <div class="cf-label">Sapidità</div>
+          <div class="cf-label">Tannino</div>
+          <div style="width:2px;background:var(--cream-dark);flex-shrink:0;"></div>
+          <div class="cf-label">Effervescenza</div>
+          <div class="cf-label">Alcol</div>
+          <div class="cf-label">Glicerina</div>
+          <div class="cf-label">Tend. Dolce</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="vino-inputs"></div>
+
+    <div class="form-grid" style="margin-top:1rem;">
+      <div class="form-group">
+        <label>Aspetti Aromatici / Fumé</label>
+        <input type="text" name="vino_aromatici" placeholder="es. Fruttato, tostato...">
+      </div>
+      <div class="form-group">
+        <label>Finale Ammandorlato</label>
+        <div class="pill-group">
+          <label onclick="selectPill(this,'vino_finale_amm')"><input type="radio" name="vino_finale_amm" value="Presente"><span>Presente</span></label>
+          <label onclick="selectPill(this,'vino_finale_amm')"><input type="radio" name="vino_finale_amm" value="Assente"><span>Assente</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tattilità</label>
+        <input type="text" name="vino_tattilita" placeholder="es. Setoso, vellutato, astringente...">
+      </div>
+    </div>
+  </div>
+
+  <!-- PUNTEGGI FINALI -->
+  <div class="section-card sec-finale">
+    <div class="section-title" style="color:#1A3A2A;">● PULIZIA, PIACEVOLEZZA & SENSAZIONI FINALI</div>
+
+    <!-- Pulizia ed equilibrio cavo orale -->
+    <div style="margin-bottom:1.2rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#1A3A2A; margin-bottom:0.5rem;">
+        Pulizia ed Equilibrio Cavo Orale
+      </div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">1</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'pulizia_punti','sc-p1',1)">1</button>
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'pulizia_punti','sc-p1',2)">2</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">3</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'pulizia_punti','sc-p1',3)">3</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">4</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'pulizia_punti','sc-p1',4)">4</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-p1">—</strong> / 4</span>
+      </div>
+      <input type="hidden" name="pulizia_punti" id="pulizia_punti" value="0">
+    </div>
+
+    <!-- Piacevolezza -->
+    <div style="margin-bottom:1.2rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#1A3A2A; margin-bottom:0.5rem;">
+        Piacevolezza (Sorprese / Nuove Sensazioni)
+      </div>
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">1</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'piacevolezza_punti','sc-p2',1)">1</button>
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'piacevolezza_punti','sc-p2',2)">2</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">3</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'piacevolezza_punti','sc-p2',3)">3</button>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-bottom:0.3rem;">4</div>
+          <div class="scale-group">
+            <button type="button" class="scale-btn" onclick="setFinalScore(this,'piacevolezza_punti','sc-p2',4)">4</button>
+          </div>
+        </div>
+        <span class="scale-pts">Punti: <strong id="lbl-p2">—</strong> / 4</span>
+      </div>
+      <input type="hidden" name="piacevolezza_punti" id="piacevolezza_punti" value="0">
+    </div>
+
+    <!-- Sensazioni finali -->
+    <div style="margin-bottom:1.2rem;">
+      <div style="font-size:0.75rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#1A3A2A; margin-bottom:0.5rem;">
+        Sensazioni Finali
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        {% for v in [1,2,3,4,5,6,7] %}
+        <button type="button" class="scale-btn" onclick="setFinalScore(this,'sensazioni_punti','sc-p3',{{ v }})">{{ v }}</button>
+        {% endfor %}
+        <span class="scale-pts">Punti: <strong id="lbl-p3">—</strong> / 7</span>
+      </div>
+      <input type="hidden" name="sensazioni_punti" id="sensazioni_punti" value="0">
+    </div>
+
+    <!-- Conclusioni -->
+    <div style="margin-top:1.5rem;">
+      <div class="conclusioni-bar">
+        <div class="cb cb-sco">Sconsigliato<br><small>3 – 5</small></div>
+        <div class="cb cb-acc">Accettabile<br><small>6 – 8</small></div>
+        <div class="cb cb-buo">Buono<br><small>9 – 12</small></div>
+        <div class="cb cb-app">Appagante<br><small>13 – 15</small></div>
+      </div>
+      <div style="text-align:right; margin-top:1rem; font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:#1A3A2A;">
+        Totale: <strong id="conclusioni-tot">—</strong>
+        <span style="font-size:1rem; font-style:italic; color:var(--gold); margin-left:0.5rem;" id="conclusioni-giu"></span>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:1rem;">
+      <label>Note</label>
+      <textarea name="note" placeholder="Note libere sull'abbinamento..."></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/" class="btn btn-outline" style="background:var(--muted);color:white;padding:0.8rem 1.5rem;">Annulla</a>
+    <button type="submit" class="btn btn-lg" style="background:#1A3A2A;color:var(--cream);padding:0.8rem 2rem;font-size:0.8rem;letter-spacing:0.1em;text-transform:uppercase;border:none;border-radius:3px;cursor:pointer;">💾 Salva Abbinamento</button>
+  </div>
+
+</form>
+
+<script>
+// ---- Grid builder ----
+const CIBO_COLS = ['dolce','grassezza','tendenza_dolce','untuosita','succulenza','sapidita','acidita','amaro'];
+const VINO_COLS = ['dolce','acidita','sapidita','tannino','effervescenza','alcol','glicerina','tendenza_dolce'];
+
+const ciboValues = {};
+const vinoValues = {};
+CIBO_COLS.forEach(c => ciboValues[c] = 0);
+VINO_COLS.forEach(c => vinoValues[c] = 0);
+
+function buildGrid(rowsEl, inputsEl, cols, valuesObj, prefix, colorClass) {
+  // Build rows 10 down to 1
+  for (let row = 10; row >= 1; row--) {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'chart-row';
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'row-num';
+    numDiv.textContent = row;
+    rowDiv.appendChild(numDiv);
+
+    cols.forEach((col, idx) => {
+      if (idx === 4) {
+        // divider
+        const div = document.createElement('div');
+        div.style.cssText = 'width:2px;background:var(--cream-dark);flex-shrink:0;';
+        rowDiv.appendChild(div);
+      }
+      const cell = document.createElement('div');
+      cell.className = 'chart-cell';
+      cell.dataset.col = col;
+      cell.dataset.row = row;
+      cell.dataset.prefix = prefix;
+
+      cell.addEventListener('click', () => {
+        const current = valuesObj[col];
+        if (current === row) {
+          // deselect
+          valuesObj[col] = 0;
+        } else {
+          valuesObj[col] = row;
+        }
+        refreshGrid(rowsEl, cols, valuesObj, prefix, colorClass);
+        updateHiddenInputs(inputsEl, cols, valuesObj, prefix);
+      });
+
+      rowDiv.appendChild(cell);
+    });
+    rowsEl.appendChild(rowDiv);
+  }
+  updateHiddenInputs(inputsEl, cols, valuesObj, prefix);
+}
+
+function refreshGrid(rowsEl, cols, valuesObj, prefix, colorClass) {
+  const cells = rowsEl.querySelectorAll('.chart-cell');
+  cells.forEach(cell => {
+    const col = cell.dataset.col;
+    const row = parseInt(cell.dataset.row);
+    const val = valuesObj[col];
+    cell.classList.remove('selected-cibo','selected-vino','filled-cibo','filled-vino');
+    if (val > 0) {
+      if (row === val) cell.classList.add('selected-' + colorClass);
+      else if (row < val) cell.classList.add('filled-' + colorClass);
+    }
+  });
+}
+
+function updateHiddenInputs(inputsEl, cols, valuesObj, prefix) {
+  inputsEl.innerHTML = '';
+  cols.forEach(col => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = prefix + '_' + col;
+    inp.value = valuesObj[col];
+    inputsEl.appendChild(inp);
+  });
+}
+
+// Build both grids
+buildGrid(
+  document.getElementById('cibo-rows'),
+  document.getElementById('cibo-inputs'),
+  CIBO_COLS, ciboValues, 'cibo', 'cibo'
+);
+buildGrid(
+  document.getElementById('vino-rows'),
+  document.getElementById('vino-inputs'),
+  VINO_COLS, vinoValues, 'vino', 'vino'
+);
+
+// ---- Final scores ----
+const finalScores = { pulizia_punti: 0, piacevolezza_punti: 0, sensazioni_punti: 0 };
+
+function setFinalScore(btn, field, scId, value) {
+  // Find all buttons in same group (siblings of btn's parent)
+  const group = btn.closest('.section-card') || btn.parentElement.parentElement.parentElement;
+  group.querySelectorAll(`[onclick*="${field}"]`).forEach(b => b.classList.remove('active'));
+  
+  if (finalScores[field] === value) {
+    finalScores[field] = 0;
+    document.getElementById(field).value = 0;
+  } else {
+    btn.classList.add('active');
+    finalScores[field] = value;
+    document.getElementById(field).value = value;
+  }
+  updateFinalScore();
+}
+
+function updateFinalScore() {
+  const p1 = finalScores.pulizia_punti;
+  const p2 = finalScores.piacevolezza_punti;
+  const p3 = finalScores.sensazioni_punti;
+  const tot = p1 + p2 + p3;
+
+  document.getElementById('sc-p1').textContent = p1;
+  document.getElementById('sc-p2').textContent = p2;
+  document.getElementById('sc-p3').textContent = p3;
+  document.getElementById('sc-tot').textContent = tot;
+  document.getElementById('lbl-p1').textContent = p1 || '—';
+  document.getElementById('lbl-p2').textContent = p2 || '—';
+  document.getElementById('lbl-p3').textContent = p3 || '—';
+
+  const giu = tot >= 13 ? 'Appagante' : tot >= 9 ? 'Buono' : tot >= 6 ? 'Accettabile' : tot >= 3 ? 'Sconsigliato' : '—';
+  document.getElementById('sc-giu').textContent = tot > 0 ? giu : '—';
+  document.getElementById('conclusioni-tot').textContent = tot || '—';
+  document.getElementById('conclusioni-giu').textContent = tot > 0 ? giu : '';
+}
+
+// Pill select fallback
+function selectPill(label, name) {
+  document.querySelectorAll(`[name="${name}"]`).forEach(inp => {
+    inp.closest('label').classList.remove('selected');
+  });
+  label.classList.add('selected');
+}
+</script>
+{% endblock %}

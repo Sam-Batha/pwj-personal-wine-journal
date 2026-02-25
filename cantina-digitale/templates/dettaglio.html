@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}{{ d.vino }} - Cantina Digitale{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .detail-hero {
+    background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 70%);
+    padding: 3rem 2rem;
+    color: var(--cream);
+    position: relative;
+    overflow: hidden;
+  }
+  .detail-hero::before { content:'🍷'; position:absolute; font-size:16rem; opacity:0.05; bottom:-3rem; right:-1rem; }
+  .detail-hero .wine-name { font-family:'Cormorant Garamond',serif; font-size:2.6rem; font-weight:300; line-height:1.1; }
+  .detail-hero .wine-meta { font-size:0.82rem; opacity:0.6; margin-top:0.4rem; letter-spacing:0.1em; }
+  .score-chip {
+    display:inline-flex; align-items:center; gap:0.8rem;
+    background:rgba(201,168,76,0.2); border:1px solid var(--gold);
+    padding:0.8rem 1.5rem; border-radius:4px; margin-top:1.2rem;
+  }
+  .score-big { font-family:'Cormorant Garamond',serif; font-size:3.5rem; font-weight:300; color:var(--gold); line-height:1; }
+  .score-info .giu { font-family:'Cormorant Garamond',serif; font-size:1.2rem; font-style:italic; color:var(--gold-light); }
+  .score-info .max { font-size:0.65rem; opacity:0.5; letter-spacing:0.15em; text-transform:uppercase; }
+
+  .detail-row { display:flex; padding:0.55rem 0; border-bottom:1px solid var(--cream-dark); gap:1rem; }
+  .detail-row:last-child { border-bottom:none; }
+  .detail-row .k { font-size:0.65rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); min-width:170px; flex-shrink:0; padding-top:0.1rem; }
+  .detail-row .v { font-size:0.88rem; color:var(--ink-mid); flex:1; }
+
+  .score-breakdown { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .sb-item { background:var(--white); border:1px solid var(--cream-dark); border-radius:4px; padding:1rem; text-align:center; box-shadow:var(--shadow); }
+  .sb-item .val { font-family:'Cormorant Garamond',serif; font-size:2.2rem; font-weight:300; color:var(--burgundy); line-height:1; }
+  .sb-item .max { font-size:0.62rem; color:var(--muted); }
+  .sb-item .lbl { font-size:0.6rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:0.3rem; }
+  .sb-item .bar { height:4px; background:var(--cream-dark); border-radius:2px; margin-top:0.5rem; overflow:hidden; }
+  .sb-item .bar-fill { height:100%; background:linear-gradient(90deg, var(--gold), var(--burgundy-light)); border-radius:2px; }
+
+  .tag { display:inline-block; background:var(--cream); border:1px solid var(--cream-dark); padding:0.2rem 0.6rem; border-radius:3px; font-size:0.75rem; color:var(--ink-mid); margin:0.15rem; }
+
+  .conclusioni-bar { display:flex; border-radius:4px; overflow:hidden; margin-top:0.5rem; }
+  .cb { flex:1; text-align:center; padding:0.5rem 0.3rem; font-size:0.7rem; font-weight:600; line-height:1.3; }
+  .cb-acc { background:#e2e3e5; color:#383d41; }
+  .cb-buo { background:#fff3cd; color:#856404; }
+  .cb-ott { background:#cce5ff; color:#004085; }
+  .cb-ecc { background:#d4edda; color:#155724; }
+  .cb-mem { background:var(--burgundy); color:var(--gold); }
+  .cb.active { outline:3px solid var(--burgundy-dark); outline-offset:-3px; transform:scale(1.02); position:relative; z-index:1; }
+
+  .actions-bar { display:flex; gap:1rem; padding:1.5rem 0; justify-content:flex-end; border-top:1px solid var(--cream-dark); margin-top:1rem; flex-wrap:wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-hero">
+  <div class="wine-name">{{ d.vino }}</div>
+  <div class="wine-meta">{% if d.alcol %}Alcol {{ d.alcol }}% vol{% endif %}</div>
+  {% if d.punteggio_totale %}
+  <div class="score-chip">
+    <div class="score-big">{{ d.punteggio_totale }}</div>
+    <div class="score-info">
+      <div class="giu">{{ d.giudizio_finale }}</div>
+      <div class="max">su 100 punti</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="container-narrow">
+  <!-- Dati generali -->
+  <div class="section-card" style="margin-top:2rem;">
+    <div class="section-title">Dati Generali</div>
+    <div class="detail-row"><span class="k">Luogo</span><span class="v">{{ d.luogo or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Data</span><span class="v">{{ d.data or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Alcol</span><span class="v">{% if d.alcol %}{{ d.alcol }}% vol{% else %}—{% endif %}</span></div>
+  </div>
+
+  <!-- Score breakdown -->
+  {% if d.punteggio_totale %}
+  <div class="score-breakdown">
+    <div class="sb-item">
+      <div class="val">{{ d.olfatto_complessita_punti }}</div><div class="max">/ 16</div>
+      <div class="lbl">Complessità Olfattiva</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.olfatto_complessita_punti or 0)/16*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.olfatto_qualita_punti }}</div><div class="max">/ 20</div>
+      <div class="lbl">Qualità Olfattiva</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.olfatto_qualita_punti or 0)/20*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.gusto_equilibrio_punti }}</div><div class="max">/ 18</div>
+      <div class="lbl">Equilibrio</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.gusto_equilibrio_punti or 0)/18*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.gusto_persistenza_punti }}</div><div class="max">/ 16</div>
+      <div class="lbl">Persistenza</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.gusto_persistenza_punti or 0)/16*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.gusto_qualita_punti }}</div><div class="max">/ 24</div>
+      <div class="lbl">Qualità Gustativa</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.gusto_qualita_punti or 0)/24*100)|int }}%"></div></div>
+    </div>
+    <div class="sb-item">
+      <div class="val">{{ d.dimensione_punti }}</div><div class="max">/ 6</div>
+      <div class="lbl">Dimensione</div>
+      <div class="bar"><div class="bar-fill" style="width:{{ ((d.dimensione_punti or 0)/6*100)|int }}%"></div></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Colore -->
+  <div class="section-card">
+    <div class="section-title" style="color:#C97A2A;">● COLORE</div>
+    <div class="detail-row"><span class="k">Colore</span><span class="v">{{ d.colore or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Riflesso</span><span class="v">{{ d.riflesso or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Densità Cromatica</span><span class="v">{{ d.densita_cromatica or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Limpidezza</span><span class="v">{{ d.limpidezza or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Vivacità</span><span class="v">{{ d.vivacita or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Perlage Grana Bollicine</span><span class="v">{{ d.perlage_grana or '—' }}</span></div>
+  </div>
+
+  <!-- Olfatto -->
+  <div class="section-card">
+    <div class="section-title" style="color:#5A8A3A;">● OLFATTO</div>
+    {% if d.olfatto_descrittori %}
+    <div class="detail-row">
+      <span class="k">Descrittori</span>
+      <span class="v">
+        {% for desc in d.olfatto_descrittori.split(', ') %}
+          {% if desc %}<span class="tag">{{ desc }}</span>{% endif %}
+        {% endfor %}
+      </span>
+    </div>
+    {% endif %}
+    {% if d.olfatto_note %}
+    <div class="detail-row"><span class="k">Note</span><span class="v" style="font-style:italic;">{{ d.olfatto_note }}</span></div>
+    {% endif %}
+    <div class="detail-row"><span class="k">Complessità</span><span class="v">{{ d.olfatto_complessita or '—' }} {% if d.olfatto_complessita_punti %}<strong style="color:var(--burgundy)">({{ d.olfatto_complessita_punti }} pt)</strong>{% endif %}</span></div>
+    <div class="detail-row"><span class="k">Qualità</span><span class="v">{{ d.olfatto_qualita or '—' }} {% if d.olfatto_qualita_punti %}<strong style="color:var(--burgundy)">({{ d.olfatto_qualita_punti }} pt)</strong>{% endif %}</span></div>
+  </div>
+
+  <!-- Gusto -->
+  <div class="section-card">
+    <div class="section-title" style="color:#2A6A9A;">● GUSTO</div>
+    <div class="detail-row"><span class="k">Zucchero</span><span class="v">{{ d.gusto_zucchero or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Alcol (percepito)</span><span class="v">{{ d.gusto_alcol or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Acidità (percepita)</span><span class="v">{{ d.gusto_acidita or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Tannino</span><span class="v">{{ d.gusto_tannino or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Equilibrio</span><span class="v">{{ d.gusto_equilibrio or '—' }} {% if d.gusto_equilibrio_punti %}<strong style="color:var(--burgundy)">({{ d.gusto_equilibrio_punti }} pt)</strong>{% endif %}</span></div>
+    <div class="detail-row"><span class="k">Persistenza</span><span class="v">{{ d.gusto_persistenza or '—' }} {% if d.gusto_persistenza_punti %}<strong style="color:var(--burgundy)">({{ d.gusto_persistenza_punti }} pt)</strong>{% endif %}</span></div>
+    <div class="detail-row"><span class="k">Sapidità percepita</span><span class="v">{{ d.gusto_sapidita or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Chiusura di bocca</span><span class="v">{{ d.gusto_chiusura or '—' }}</span></div>
+    <div class="detail-row"><span class="k">Qualità Gustativa</span><span class="v">{{ d.gusto_qualita or '—' }} {% if d.gusto_qualita_punti %}<strong style="color:var(--burgundy)">({{ d.gusto_qualita_punti }} pt)</strong>{% endif %}</span></div>
+    <div class="detail-row"><span class="k">Dimensione</span><span class="v">{{ d.dimensione or '—' }} {% if d.dimensione_punti %}<strong style="color:var(--burgundy)">({{ d.dimensione_punti }} pt)</strong>{% endif %}</span></div>
+    <div class="detail-row"><span class="k">Prospettive di consumo</span><span class="v">{{ d.prospettive or '—' }}</span></div>
+  </div>
+
+  <!-- Conclusioni -->
+  <div class="section-card">
+    <div class="section-title">Conclusioni</div>
+    <div class="conclusioni-bar">
+      <div class="cb cb-acc {% if d.punteggio_totale and d.punteggio_totale >= 70 and d.punteggio_totale <= 77 %}active{% endif %}">Accettabile<br><small>70 / 77</small></div>
+      <div class="cb cb-buo {% if d.punteggio_totale and d.punteggio_totale >= 78 and d.punteggio_totale <= 85 %}active{% endif %}">Buono<br><small>78 / 85</small></div>
+      <div class="cb cb-ott {% if d.punteggio_totale and d.punteggio_totale >= 86 and d.punteggio_totale <= 90 %}active{% endif %}">Ottimo<br><small>86 / 90</small></div>
+      <div class="cb cb-ecc {% if d.punteggio_totale and d.punteggio_totale >= 91 and d.punteggio_totale <= 96 %}active{% endif %}">Eccellente<br><small>91 / 96</small></div>
+      <div class="cb cb-mem {% if d.punteggio_totale and d.punteggio_totale >= 97 %}active{% endif %}">Memorabile<br><small>97 / 100</small></div>
+    </div>
+    <div style="text-align:right; margin-top:1rem; font-family:'Cormorant Garamond',serif; font-size:1.5rem; color:var(--burgundy);">
+      Totale: <strong>{{ d.punteggio_totale or '—' }}</strong>
+      <span style="font-size:1rem; font-style:italic; color:var(--gold); margin-left:0.5rem;">{{ d.giudizio_finale or '' }}</span>
+    </div>
+  </div>
+
+  <div class="actions-bar">
+    <a href="/" class="btn btn-outline" style="background:var(--muted);color:white;padding:0.7rem 1.5rem;">← Archivio</a>
+    <a href="/nuova" class="btn btn-gold">+ Nuova Degustazione</a>
+    <form method="post" action="/elimina/{{ d.id }}" onsubmit="return confirm('Eliminare questa degustazione?');">
+      <button type="submit" class="btn btn-danger" style="padding:0.7rem 1rem;">🗑 Elimina</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

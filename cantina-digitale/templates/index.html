@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}Archivio Degustazioni - Cantina Digitale{% endblock %}
+
+{% block extra_styles %}
+<style>
+  .hero {
+    background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 50%, var(--burgundy-light) 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '🍷';
+    position: absolute;
+    font-size: 15rem;
+    opacity: 0.04;
+    top: -2rem;
+    right: -2rem;
+  }
+  .hero h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+  }
+  .hero h2 em { color: var(--gold); font-style: italic; }
+  .hero p { color: rgba(245,239,230,0.65); font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; }
+  
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1.2rem 2rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--cream-dark);
+    flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; }
+  .stat-item .val { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 400; color: var(--burgundy); }
+  .stat-item .lbl { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  
+  .search-bar {
+    max-width: 600px;
+    margin: 2rem auto;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .search-bar input {
+    flex: 1;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    background: var(--white);
+    border: 1px solid var(--cream-dark);
+  }
+  .search-bar button {
+    background: var(--burgundy);
+    color: var(--cream);
+    padding: 0.7rem 1.2rem;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s;
+  }
+  .search-bar button:hover { background: var(--burgundy-light); }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .card {
+    background: var(--white);
+    border-radius: 4px;
+    border: 1px solid var(--cream-dark);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  
+  .card-header {
+    background: linear-gradient(135deg, var(--burgundy-dark), var(--burgundy));
+    padding: 1.2rem 1.5rem;
+    position: relative;
+  }
+  .card-header .wine-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 0.02em;
+  }
+  .card-header .wine-meta {
+    font-size: 0.72rem;
+    color: rgba(245,239,230,0.6);
+    margin-top: 0.2rem;
+    letter-spacing: 0.1em;
+  }
+  .card-badge {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: var(--gold);
+    color: var(--burgundy-dark);
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  
+  .card-body {
+    padding: 1.2rem 1.5rem;
+  }
+  
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--cream-dark);
+    font-size: 0.78rem;
+  }
+  .card-row:last-child { border-bottom: none; }
+  .card-row .key { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .card-row .val { font-weight: 500; color: var(--ink-mid); }
+  
+  .giudizio-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+  .giudizio-Eccellente { background: #d4edda; color: #155724; }
+  .giudizio-Molto-Buono { background: #cce5ff; color: #004085; }
+  .giudizio-Buono { background: #fff3cd; color: #856404; }
+  .giudizio-Discreto { background: #f8d7da; color: #721c24; }
+  .giudizio-Sufficiente { background: #e2e3e5; color: #383d41; }
+  
+  .empty-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.4; }
+  .empty-state h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; font-weight: 300; color: var(--burgundy); margin-bottom: 0.5rem; }
+  .empty-state p { font-size: 0.82rem; margin-bottom: 1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <h2>Archivio <em>Degustazioni</em></h2>
+  <p>Schede di degustazione — Standard Assosommelier</p>
+</div>
+
+{% if stats.tot %}
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="val">{{ stats.tot }}</div>
+    <div class="lbl">Degustazioni</div>
+  </div>
+  <div class="stat-item">
+    <div class="val">{{ "%.0f"|format(stats.media or 0) }}</div>
+    <div class="lbl">Punteggio Medio</div>
+  </div>
+  <div class="stat-item">
+    <div class="val">{{ stats.massimo or 0 }}</div>
+    <div class="lbl">Punteggio Massimo</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="container">
+  <form method="get" action="/" class="search-bar">
+    <input type="text" name="q" placeholder="🔍  Cerca per vino, produttore, zona, note..." value="{{ search }}">
+    <button type="submit">Cerca</button>
+    {% if search %}<a href="/" class="btn btn-outline" style="background:var(--muted);color:white;padding:0.7rem 1rem;">✕</a>{% endif %}
+  </form>
+  
+  {% if search %}
+    <p style="font-size:0.82rem; color:var(--muted); margin-bottom:0.5rem;">
+      {{ degustazioni|length }} risultat{% if degustazioni|length == 1 %}o{% else %}i{% endif %} per "<strong>{{ search }}</strong>"
+    </p>
+  {% endif %}
+  
+  {% if degustazioni %}
+    <div class="grid">
+      {% for d in degustazioni %}
+      <a href="/dettaglio/{{ d.id }}" class="card">
+        <div class="card-header">
+          <div class="wine-name">{{ d.vino }}</div>
+          <div class="wine-meta">
+            {% if d.annata %}{{ d.annata }} · {% endif %}
+            {% if d.produttore %}{{ d.produttore }}{% endif %}
+          </div>
+          {% if d.punteggio_totale %}
+          <div class="card-badge">{{ d.punteggio_totale }}/100</div>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="card-row">
+            <span class="key">Zona/DOC</span>
+            <span class="val">{{ d.zona_doc or '—' }}</span>
+          </div>
+          <div class="card-row">
+            <span class="key">Data</span>
+            <span class="val">{{ d.data or '—' }}</span>
+          </div>
+          <div class="card-row">
+            <span class="key">Colore</span>
+            <span class="val">{{ d.colore_tonalita or '—' }}{% if d.colore_intensita %} · {{ d.colore_intensita }}{% endif %}</span>
+          </div>
+          <div class="card-row">
+            <span class="key">Giudizio</span>
+            <span class="val">
+              {% if d.giudizio_finale %}
+              <span class="giudizio-badge giudizio-{{ d.giudizio_finale|replace(' ', '-') }}">{{ d.giudizio_finale }}</span>
+              {% else %}—{% endif %}
+            </span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🍾</div>
+      <h3>{% if search %}Nessun risultato trovato{% else %}La cantina è vuota{% endif %}</h3>
+      <p>{% if search %}Prova con altri termini di ricerca.{% else %}Inizia aggiungendo la tua prima scheda di degustazione.{% endif %}</p>
+      <a href="/nuova" class="btn btn-gold btn-lg">+ Crea Prima Degustazione</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
